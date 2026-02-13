@@ -1,24 +1,26 @@
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import DotGrid from '../components/DotGrid'
 
 const Landing = () => {
   const navigate = useNavigate()
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      {/* Video Background */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      >
-        <source src="https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-futuristic-devices-1046-large.mp4" type="video/mp4" />
-      </video>
-
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/50"></div>
+    <div className="relative min-h-screen overflow-hidden bg-[#0a0a0a]">
+      {/* DotGrid Background */}
+      <div className="absolute inset-0 z-0">
+        <DotGrid
+          dotSize={5}
+          gap={15}
+          baseColor="#271E37"
+          activeColor="#5227FF"
+          proximity={120}
+          shockRadius={250}
+          shockStrength={5}
+          resistance={750}
+          returnDuration={1.5}
+        />
+      </div>
 
       {/* Navbar */}
       <Navbar />

@@ -1,12 +1,28 @@
 import { ArrowUpRight, Activity, Wind, Droplet, AlertTriangle, Check, X, TrendingUp, Radio } from 'lucide-react'
 import Navbar from '../components/Navbar'
+import DotGrid from '../components/DotGrid'
 
 const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="relative min-h-screen bg-[#0a0a0a]">
+      {/* DotGrid Background */}
+      <div className="absolute inset-0 z-0">
+        <DotGrid
+          dotSize={5}
+          gap={15}
+          baseColor="#271E37"
+          activeColor="#5227FF"
+          proximity={120}
+          shockRadius={250}
+          shockStrength={5}
+          resistance={750}
+          returnDuration={1.5}
+        />
+      </div>
+
       <Navbar />
 
-      <div className="max-w-[1440px] mx-auto px-6 md:px-[120px] pt-28 pb-12">
+      <div className="relative z-10 max-w-[1440px] mx-auto px-6 md:px-[120px] pt-28 pb-12">
         {/* Dashboard Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-8 md:mb-12">
           <div>
@@ -49,7 +65,7 @@ const Dashboard = () => {
                 </div>
                 <p className="font-inter text-sm text-white/70 mt-2">SPO2 Saturation</p>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur rounded-lg inline-flex">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur rounded-lg">
                 <TrendingUp size={16} className="text-green-400" />
                 <span className="font-inter text-sm text-white">Normal Range</span>
               </div>
@@ -57,7 +73,7 @@ const Dashboard = () => {
           </div>
 
           {/* Accelerometer Activity */}
-          <div className="lg:col-span-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300">
+          <div className="lg:col-span-2 bg-[#1a1a1a]/80 backdrop-blur-sm border border-[#2a2a2a] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-cabin text-sm text-white/80 mb-1">Motion Detection</h3>
@@ -93,7 +109,7 @@ const Dashboard = () => {
           </div>
 
           {/* Fall Detection Status */}
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 hover:border-green-500/30 transition-all duration-300">
+          <div className="bg-[#1a1a1a]/80 backdrop-blur-sm border border-[#2a2a2a] rounded-2xl p-6 hover:border-green-500/30 transition-all duration-300">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
                 <Check size={20} className="text-green-500" />
@@ -109,7 +125,7 @@ const Dashboard = () => {
           </div>
 
           {/* Environmental Monitor */}
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300">
+          <div className="bg-[#1a1a1a]/80 backdrop-blur-sm border border-[#2a2a2a] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                 <Wind size={20} className="text-blue-400" />
@@ -127,7 +143,7 @@ const Dashboard = () => {
           </div>
 
           {/* Recent Alerts */}
-          <div className="lg:col-span-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300">
+          <div className="lg:col-span-2 bg-[#1a1a1a]/80 backdrop-blur-sm border border-[#2a2a2a] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-cabin text-base text-white">Recent Alerts</h3>
               <span className="font-inter text-xs text-white/60">Last 24 hours</span>
@@ -161,7 +177,7 @@ const Dashboard = () => {
           </div>
 
           {/* Device Status Grid */}
-          <div className="lg:col-span-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300">
+          <div className="lg:col-span-2 bg-[#1a1a1a]/80 backdrop-blur-sm border border-[#2a2a2a] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300">
             <h3 className="font-cabin text-base text-white mb-6">Device Status</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 bg-[#0a0a0a] rounded-xl">
@@ -200,7 +216,7 @@ const Dashboard = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="lg:col-span-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300">
+          <div className="lg:col-span-4 bg-[#1a1a1a]/80 backdrop-blur-sm border border-[#2a2a2a] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300">
             <h3 className="font-cabin text-base text-white mb-6">Quick Actions</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <button className="p-4 bg-accent rounded-xl font-cabin text-sm text-white hover:bg-accent/80 transition-colors text-left flex items-center justify-between group">
