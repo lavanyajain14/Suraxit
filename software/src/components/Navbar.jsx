@@ -33,17 +33,7 @@ const Navbar = () => {
             </a>
           </div>
 
-          {/* Desktop Action Buttons */}
-          <div className="hidden md:flex items-center gap-4">
-            <button className="px-5 py-2.5 bg-white border border-[#d4d4d4] rounded-lg text-[#171717] font-manrope font-semibold text-sm hover:bg-gray-100 transition-colors">
-              Sign In
-            </button>
-            <button className="px-5 py-2.5 bg-primary rounded-lg text-[#fafafa] font-manrope font-semibold text-sm shadow-lg hover:bg-purple-600 transition-colors">
-              Get Started
-            </button>
-          </div>
-
-          {/* Mobile Menu Button */}
+         
           <button 
             className="md:hidden text-white"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
