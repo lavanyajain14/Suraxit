@@ -1,8 +1,4 @@
-"""
-Suraxit ML API Server
-Serves fall detection predictions and simulated sensor data
-for the React dashboard via REST API.
-"""
+
 
 from flask import Flask, jsonify
 from flask_cors import CORS

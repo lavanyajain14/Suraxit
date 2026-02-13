@@ -1,10 +1,45 @@
-import { ArrowUpRight, Activity, Wind, Droplet, AlertTriangle, Check, TrendingUp, TrendingDown, Radio, Heart, Thermometer, Droplets, Wifi, WifiOff } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowUpRight, Activity, Wind, Droplet, AlertTriangle, Check, TrendingUp, TrendingDown, Radio, Heart, Thermometer, Droplets, Wifi, WifiOff, Wallet, Link2, Users, Shield, Copy, ExternalLink, RefreshCw } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import DotGrid from '../components/DotGrid'
 import { useSensorData } from '../hooks/useSensorData'
+import { useWallet } from '../solana/WalletProvider'
+import { useKeyRegistry } from '../hooks/useKeyRegistry'
 
 const Dashboard = () => {
   const { data, connected } = useSensorData(1500)
+  const walletCtx = useWallet()
+  const registry = useKeyRegistry()
+  const [usernameInput, setUsernameInput] = useState('')
+  const [registering, setRegistering] = useState(false)
+  const [registerMsg, setRegisterMsg] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  const handleRegister = async () => {
+    if (!usernameInput || usernameInput.length < 3) {
+      setRegisterMsg('Username must be at least 3 characters')
+      return
+    }
+    setRegistering(true)
+    setRegisterMsg('')
+    try {
+      await registry.register(usernameInput)
+      setRegisterMsg('Registered on-chain!')
+      setUsernameInput('')
+    } catch (err) {
+      setRegisterMsg(err.message?.includes('already in use') ? 'Username taken' : 'Registration failed')
+    } finally {
+      setRegistering(false)
+    }
+  }
+
+  const copyAddress = () => {
+    if (walletCtx.publicKey) {
+      navigator.clipboard.writeText(walletCtx.publicKey.toBase58())
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   if (!data) {
     return (
@@ -66,6 +101,148 @@ const Dashboard = () => {
 
         {/* Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-auto">
+
+          {/* Blockchain / Wallet Card */}
+          <div className="lg:col-span-4 bg-gradient-to-r from-[#1a1a2e]/90 to-[#16213e]/90 backdrop-blur-sm border border-indigo-500/20 rounded-2xl p-6 hover:border-indigo-500/40 transition-all duration-300">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center">
+                  <Shield size={24} className="text-indigo-400" />
+                </div>
+                <div>
+                  <h3 className="font-cabin text-base text-white">Solana Key Registry</h3>
+                  <p className="font-inter text-xs text-white/50 mt-0.5">
+                    Devnet &middot; On-chain identity &amp; group management
+                  </p>
+                </div>
+              </div>
+
+              {!walletCtx.connected ? (
+                <button
+                  onClick={walletCtx.createWallet}
+                  disabled={walletCtx.connecting}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/50 rounded-lg font-cabin text-sm text-white transition-colors"
+                >
+                  <Wallet size={16} />
+                  {walletCtx.connecting ? 'Creating...' : 'Create Wallet'}
+                </button>
+              ) : (
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Wallet address pill */}
+                  <button
+                    onClick={copyAddress}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg font-mono text-xs text-white/80 hover:bg-white/10 transition-colors"
+                  >
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    {walletCtx.shortenedAddress}
+                    {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} className="text-white/40" />}
+                  </button>
+
+                  {/* Balance */}
+                  <div className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg">
+                    <span className="font-mono text-xs text-white/80">
+                      {walletCtx.balance !== null ? `${walletCtx.balance.toFixed(4)} SOL` : '...'}
+                    </span>
+                  </div>
+
+                  {/* Refresh */}
+                  <button
+                    onClick={() => { walletCtx.refreshBalance(); registry.refresh() }}
+                    className="p-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-colors"
+                  >
+                    <RefreshCw size={14} className="text-white/60" />
+                  </button>
+
+                  {/* Disconnect */}
+                  <button
+                    onClick={walletCtx.disconnect}
+                    className="px-3 py-2 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg font-cabin text-xs hover:bg-red-500/20 transition-colors"
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* On-chain identity section */}
+            {walletCtx.connected && (
+              <div className="mt-5 pt-5 border-t border-white/10 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Username status */}
+                <div className="p-4 bg-[#0a0a0a]/60 rounded-xl">
+                  <p className="font-inter text-xs text-white/50 mb-2">On-Chain Username</p>
+                  {registry.registered ? (
+                    <div className="flex items-center gap-2">
+                      <span className="font-manrope text-lg text-indigo-400">@{registry.username}</span>
+                      <Check size={16} className="text-green-400" />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={usernameInput}
+                        onChange={(e) => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                        placeholder="choose_username"
+                        maxLength={20}
+                        className="flex-1 bg-transparent border border-white/10 rounded-lg px-3 py-1.5 font-mono text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-indigo-500/50"
+                      />
+                      <button
+                        onClick={handleRegister}
+                        disabled={registering || registry.loading}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/50 rounded-lg font-cabin text-xs text-white transition-colors whitespace-nowrap"
+                      >
+                        {registering ? '...' : 'Register'}
+                      </button>
+                    </div>
+                  )}
+                  {registerMsg && (
+                    <p className={`font-inter text-xs mt-2 ${registerMsg.includes('Registered') ? 'text-green-400' : 'text-red-400'}`}>
+                      {registerMsg}
+                    </p>
+                  )}
+                </div>
+
+                {/* Groups */}
+                <div className="p-4 bg-[#0a0a0a]/60 rounded-xl">
+                  <p className="font-inter text-xs text-white/50 mb-2">Groups</p>
+                  <div className="flex items-center gap-2">
+                    <Users size={18} className="text-indigo-400" />
+                    <span className="font-manrope text-lg text-white">{registry.groups.length}</span>
+                    <span className="font-inter text-xs text-white/40">on-chain groups</span>
+                  </div>
+                  {registry.groups.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {registry.groups.slice(0, 3).map((g, i) => (
+                        <p key={i} className="font-inter text-xs text-white/60 truncate">
+                          {g.name} &middot; {g.memberCount} members
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Network info */}
+                <div className="p-4 bg-[#0a0a0a]/60 rounded-xl">
+                  <p className="font-inter text-xs text-white/50 mb-2">Network</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Link2 size={16} className="text-indigo-400" />
+                    <span className="font-manrope text-lg text-white capitalize">{walletCtx.network}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="font-inter text-xs text-white/50">Solana RPC Connected</span>
+                  </div>
+                  <a
+                    href={`https://explorer.solana.com/address/${walletCtx.publicKey?.toBase58()}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 mt-2 font-inter text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                  >
+                    Explorer <ExternalLink size={10} />
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
           
           <div className="lg:col-span-2 lg:row-span-2 bg-gradient-to-br from-primary to-accent rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden group hover:shadow-primary/20 transition-all duration-300">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>

@@ -1,0 +1,327 @@
+{
+  "version": "0.1.0",
+  "name": "key_registry",
+  "instructions": [
+    {
+      "name": "registerUsername",
+      "accounts": [
+        { "name": "userAccount", "isMut": true, "isSigner": false },
+        { "name": "owner", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "username", "type": "string" },
+        { "name": "encryptionKey", "type": { "array": ["u8", 32] } }
+      ]
+    },
+    {
+      "name": "lookupUsername",
+      "accounts": [
+        { "name": "userAccount", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "username", "type": "string" }
+      ]
+    },
+    {
+      "name": "transferUsername",
+      "accounts": [
+        { "name": "userAccount", "isMut": true, "isSigner": false },
+        { "name": "currentOwner", "isMut": true, "isSigner": true }
+      ],
+      "args": [
+        { "name": "newOwner", "type": "publicKey" }
+      ]
+    },
+    {
+      "name": "closeAccount",
+      "accounts": [
+        { "name": "userAccount", "isMut": true, "isSigner": false },
+        { "name": "owner", "isMut": true, "isSigner": true }
+      ],
+      "args": [
+        { "name": "username", "type": "string" }
+      ]
+    },
+    {
+      "name": "updateEncryptionKey",
+      "accounts": [
+        { "name": "userAccount", "isMut": true, "isSigner": false },
+        { "name": "owner", "isMut": true, "isSigner": true }
+      ],
+      "args": [
+        { "name": "newEncryptionKey", "type": { "array": ["u8", 32] } }
+      ]
+    },
+    {
+      "name": "createGroup",
+      "accounts": [
+        { "name": "groupAccount", "isMut": true, "isSigner": false },
+        { "name": "ownerMemberAccount", "isMut": true, "isSigner": false },
+        { "name": "owner", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "groupId", "type": { "array": ["u8", 32] } },
+        { "name": "name", "type": "string" },
+        { "name": "description", "type": "string" },
+        { "name": "isPublic", "type": "bool" },
+        { "name": "isSearchable", "type": "bool" },
+        { "name": "inviteOnly", "type": "bool" },
+        { "name": "maxMembers", "type": "u16" },
+        { "name": "allowMemberInvites", "type": "bool" },
+        { "name": "groupEncryptionKey", "type": { "array": ["u8", 32] } }
+      ]
+    },
+    {
+      "name": "setGroupCode",
+      "accounts": [
+        { "name": "groupAccount", "isMut": true, "isSigner": false },
+        { "name": "groupCodeLookup", "isMut": true, "isSigner": false },
+        { "name": "owner", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "groupId", "type": { "array": ["u8", 32] } },
+        { "name": "publicCode", "type": "string" }
+      ]
+    },
+    {
+      "name": "joinGroup",
+      "accounts": [
+        { "name": "groupAccount", "isMut": true, "isSigner": false },
+        { "name": "memberAccount", "isMut": true, "isSigner": false },
+        { "name": "newMember", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "groupId", "type": { "array": ["u8", 32] } },
+        { "name": "encryptedGroupKey", "type": { "array": ["u8", 64] } }
+      ]
+    },
+    {
+      "name": "leaveGroup",
+      "accounts": [
+        { "name": "groupAccount", "isMut": true, "isSigner": false },
+        { "name": "memberAccount", "isMut": true, "isSigner": false },
+        { "name": "member", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "groupId", "type": { "array": ["u8", 32] } }
+      ]
+    },
+    {
+      "name": "inviteMember",
+      "accounts": [
+        { "name": "groupAccount", "isMut": true, "isSigner": false },
+        { "name": "inviterMemberAccount", "isMut": false, "isSigner": false },
+        { "name": "invitedMemberAccount", "isMut": true, "isSigner": false },
+        { "name": "invitedUser", "isMut": false, "isSigner": false },
+        { "name": "inviter", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "groupId", "type": { "array": ["u8", 32] } },
+        { "name": "encryptedGroupKey", "type": { "array": ["u8", 64] } }
+      ]
+    },
+    {
+      "name": "kickMember",
+      "accounts": [
+        { "name": "groupAccount", "isMut": true, "isSigner": false },
+        { "name": "kickerMemberAccount", "isMut": false, "isSigner": false },
+        { "name": "kickedMemberAccount", "isMut": true, "isSigner": false },
+        { "name": "kickedUser", "isMut": false, "isSigner": false },
+        { "name": "kicker", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "groupId", "type": { "array": ["u8", 32] } }
+      ]
+    },
+    {
+      "name": "updateMemberRole",
+      "accounts": [
+        { "name": "groupAccount", "isMut": false, "isSigner": false },
+        { "name": "updaterMemberAccount", "isMut": false, "isSigner": false },
+        { "name": "targetMemberAccount", "isMut": true, "isSigner": false },
+        { "name": "targetUser", "isMut": false, "isSigner": false },
+        { "name": "updater", "isMut": false, "isSigner": true }
+      ],
+      "args": [
+        { "name": "groupId", "type": { "array": ["u8", 32] } },
+        { "name": "newRole", "type": { "defined": "GroupRole" } }
+      ]
+    },
+    {
+      "name": "createInviteLink",
+      "accounts": [
+        { "name": "groupAccount", "isMut": false, "isSigner": false },
+        { "name": "creatorMemberAccount", "isMut": false, "isSigner": false },
+        { "name": "inviteLinkAccount", "isMut": true, "isSigner": false },
+        { "name": "creator", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "groupId", "type": { "array": ["u8", 32] } },
+        { "name": "inviteCode", "type": "string" },
+        { "name": "expiresAt", "type": "i64" },
+        { "name": "maxUses", "type": "u16" }
+      ]
+    },
+    {
+      "name": "revokeInviteLink",
+      "accounts": [
+        { "name": "groupAccount", "isMut": false, "isSigner": false },
+        { "name": "revokerMemberAccount", "isMut": false, "isSigner": false },
+        { "name": "inviteLinkAccount", "isMut": true, "isSigner": false },
+        { "name": "revoker", "isMut": false, "isSigner": true }
+      ],
+      "args": [
+        { "name": "groupId", "type": { "array": ["u8", 32] } },
+        { "name": "inviteCode", "type": "string" }
+      ]
+    },
+    {
+      "name": "lookupGroupByCode",
+      "accounts": [
+        { "name": "groupCodeLookup", "isMut": false, "isSigner": false },
+        { "name": "groupAccount", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "publicCode", "type": "string" }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "UserAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "owner", "type": "publicKey" },
+          { "name": "username", "type": "string" },
+          { "name": "createdAt", "type": "i64" },
+          { "name": "bump", "type": "u8" },
+          { "name": "encryptionKey", "type": { "array": ["u8", 32] } }
+        ]
+      }
+    },
+    {
+      "name": "GroupAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "owner", "type": "publicKey" },
+          { "name": "groupId", "type": { "array": ["u8", 32] } },
+          { "name": "publicCode", "type": "string" },
+          { "name": "name", "type": "string" },
+          { "name": "description", "type": "string" },
+          { "name": "avatarArweaveId", "type": "string" },
+          { "name": "isPublic", "type": "bool" },
+          { "name": "isSearchable", "type": "bool" },
+          { "name": "inviteOnly", "type": "bool" },
+          { "name": "maxMembers", "type": "u16" },
+          { "name": "allowMemberInvites", "type": "bool" },
+          { "name": "requireApproval", "type": "bool" },
+          { "name": "enableReplies", "type": "bool" },
+          { "name": "enableReactions", "type": "bool" },
+          { "name": "enableReadReceipts", "type": "bool" },
+          { "name": "enableTypingIndicators", "type": "bool" },
+          { "name": "groupEncryptionKey", "type": { "array": ["u8", 32] } },
+          { "name": "memberCount", "type": "u16" },
+          { "name": "createdAt", "type": "i64" },
+          { "name": "updatedAt", "type": "i64" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "GroupMemberAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "groupId", "type": { "array": ["u8", 32] } },
+          { "name": "member", "type": "publicKey" },
+          { "name": "role", "type": { "defined": "GroupRole" } },
+          { "name": "permissions", "type": "u16" },
+          { "name": "encryptedGroupKey", "type": { "array": ["u8", 64] } },
+          { "name": "joinedAt", "type": "i64" },
+          { "name": "lastReadAt", "type": "i64" },
+          { "name": "isActive", "type": "bool" },
+          { "name": "isMuted", "type": "bool" },
+          { "name": "isBanned", "type": "bool" },
+          { "name": "invitedBy", "type": "publicKey" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "InviteLinkAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "groupId", "type": { "array": ["u8", 32] } },
+          { "name": "inviteCode", "type": "string" },
+          { "name": "createdBy", "type": "publicKey" },
+          { "name": "expiresAt", "type": "i64" },
+          { "name": "maxUses", "type": "u16" },
+          { "name": "useCount", "type": "u16" },
+          { "name": "createdAt", "type": "i64" },
+          { "name": "isActive", "type": "bool" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "GroupCodeLookupAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "publicCode", "type": "string" },
+          { "name": "groupId", "type": { "array": ["u8", 32] } },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "GroupRole",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          { "name": "Member" },
+          { "name": "Moderator" },
+          { "name": "Admin" },
+          { "name": "Owner" }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    { "code": 6000, "name": "InvalidUsernameLength", "msg": "Username must be 3-20 characters" },
+    { "code": 6001, "name": "InvalidUsernameCharacters", "msg": "Username can only contain letters, numbers, and underscores" },
+    { "code": 6002, "name": "UsernameTaken", "msg": "Username already taken" },
+    { "code": 6003, "name": "NotOwner", "msg": "Only the owner can perform this action" },
+    { "code": 6100, "name": "InvalidGroupNameLength", "msg": "Group name must be 1-100 characters" },
+    { "code": 6101, "name": "InvalidGroupDescriptionLength", "msg": "Group description must be 0-500 characters" },
+    { "code": 6102, "name": "InvalidPublicCodeLength", "msg": "Public code must be 3-20 characters" },
+    { "code": 6103, "name": "InvalidPublicCodeCharacters", "msg": "Public code can only contain lowercase letters, numbers, and hyphens" },
+    { "code": 6104, "name": "GroupFull", "msg": "Group is full (max members reached)" },
+    { "code": 6105, "name": "NotGroupOwner", "msg": "Only the group owner can perform this action" },
+    { "code": 6106, "name": "InsufficientPermissions", "msg": "Insufficient permissions" },
+    { "code": 6107, "name": "MemberBanned", "msg": "Member is banned from this group" },
+    { "code": 6108, "name": "InvalidInviteLink", "msg": "Invite link expired or invalid" },
+    { "code": 6109, "name": "InviteLinkExhausted", "msg": "Invite link usage limit reached" },
+    { "code": 6110, "name": "OwnerCannotLeave", "msg": "Owner cannot leave the group" },
+    { "code": 6111, "name": "CannotKickOwner", "msg": "Cannot kick the group owner" },
+    { "code": 6112, "name": "CannotChangeOwnerRole", "msg": "Cannot change the owner's role" },
+    { "code": 6113, "name": "InvalidInviteCodeLength", "msg": "Invite code must be 8-16 characters" },
+    { "code": 6114, "name": "InvalidInviteCodeCharacters", "msg": "Invite code can only contain alphanumeric characters" }
+  ],
+  "metadata": {
+    "address": "3emebPATdE5JTXp7TckzZKbNUhFMka7LdRbeCqpscHc1crpKBZ96Ry9BGbs94fzXRNc5FhVTLQGEsdoPzS2tbDmH"
+  }
+}
