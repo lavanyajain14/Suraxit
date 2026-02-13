@@ -20,7 +20,7 @@ const Dashboard = () => {
         />
       </div>
 
-      <Navbar />
+      
 
       <div className="relative z-10 max-w-[1440px] mx-auto px-6 md:px-[120px] pt-28 pb-12">
         {/* Dashboard Header */}
