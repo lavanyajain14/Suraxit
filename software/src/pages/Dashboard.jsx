@@ -1,19 +1,45 @@
-import { useState } from 'react'
-import { ArrowUpRight, Activity, Wind, Droplet, AlertTriangle, Check, TrendingUp, TrendingDown, Radio, Heart, Thermometer, Droplets, Wifi, WifiOff, Wallet, Link2, Users, Shield, Copy, ExternalLink, RefreshCw } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ArrowUpRight, Activity, Wind, Droplet, AlertTriangle, Check, TrendingUp, TrendingDown, Radio, Heart, Thermometer, Droplets, Wifi, WifiOff, Wallet, Link2, Users, Shield, Copy, ExternalLink, RefreshCw, Zap, ZapOff, Cpu, Signal, SignalZero, Timer, ChevronRight } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import DotGrid from '../components/DotGrid'
 import { useSensorData } from '../hooks/useSensorData'
+import { useMeshStatus } from '../hooks/useMeshStatus'
 import { useWallet } from '../solana/WalletProvider'
 import { useKeyRegistry } from '../hooks/useKeyRegistry'
 
 const Dashboard = () => {
-  const { data, connected } = useSensorData(1500)
+  const { data, connected, hardwareOnline } = useSensorData(1500)
+  const meshCtx = useMeshStatus(2000)
   const walletCtx = useWallet()
   const registry = useKeyRegistry()
   const [usernameInput, setUsernameInput] = useState('')
   const [registering, setRegistering] = useState(false)
   const [registerMsg, setRegisterMsg] = useState('')
   const [copied, setCopied] = useState(false)
+  const [showEmergencyOverlay, setShowEmergencyOverlay] = useState(false)
+  const [blackoutCountdown, setBlackoutCountdown] = useState(0)
+
+  // Show emergency overlay when fall is detected
+  useEffect(() => {
+    if (data?.fall_detection?.detected) {
+      setShowEmergencyOverlay(true)
+      const timer = setTimeout(() => setShowEmergencyOverlay(false), 30000)
+      return () => clearTimeout(timer)
+    }
+  }, [data?.fall_detection?.detected])
+
+  // Blackout countdown timer
+  useEffect(() => {
+    if (meshCtx.blackoutRemaining > 0) {
+      setBlackoutCountdown(Math.ceil(meshCtx.blackoutRemaining))
+      const interval = setInterval(() => {
+        setBlackoutCountdown(prev => Math.max(0, prev - 1))
+      }, 1000)
+      return () => clearInterval(interval)
+    } else {
+      setBlackoutCountdown(0)
+    }
+  }, [meshCtx.blackoutRemaining])
 
   const handleRegister = async () => {
     if (!usernameInput || usernameInput.length < 3) {
@@ -47,21 +73,58 @@ const Dashboard = () => {
         <div className="absolute inset-0 z-0">
           <DotGrid dotSize={5} gap={15} baseColor="#271E37" activeColor="#5227FF" proximity={120} shockRadius={250} shockStrength={5} resistance={750} returnDuration={1.5} />
         </div>
-        <div className="relative z-10 text-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="font-inter text-white/60">Loading sensor data...</p>
+        <div className="relative z-10 text-center max-w-md mx-auto px-6">
+          {connected ? (
+            // Server is up but no hardware data yet
+            <>
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-amber-500/10 border-2 border-amber-500/30 flex items-center justify-center">
+                <Cpu size={36} className="text-amber-400 animate-pulse" />
+              </div>
+              <h2 className="font-serif text-2xl text-white mb-2">Waiting for ESP32</h2>
+              <p className="font-inter text-sm text-white/50 mb-6">
+                Server is running but no hardware data received yet.<br />
+                Make sure your ESP32 is powered on and pushing data.
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                <span className="font-cabin text-sm text-amber-400">Listening for hardware...</span>
+              </div>
+              <div className="mt-6 p-4 bg-[#1a1a1a]/60 rounded-xl border border-[#2a2a2a] text-left">
+                <p className="font-cabin text-xs text-white/40 mb-2">Checklist:</p>
+                <ul className="space-y-1 font-inter text-xs text-white/50">
+                  <li>• ESP32 connected to Wi-Fi</li>
+                  <li>• Posting to <span className="text-amber-400">http://&lt;server-ip&gt;:3000/</span></li>
+                  <li>• Flask server running on port 3000</li>
+                </ul>
+              </div>
+            </>
+          ) : (
+            // Server is down
+            <>
+              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center">
+                <WifiOff size={36} className="text-red-400" />
+              </div>
+              <h2 className="font-serif text-2xl text-white mb-2">Server Offline</h2>
+              <p className="font-inter text-sm text-white/50 mb-4">
+                Cannot reach the Flask API server.
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                <span className="font-cabin text-sm text-red-400">Disconnected</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
     )
   }
 
-  const { spo2, heart_rate, accelerometer, gyroscope, fall_detection, environment, devices } = data
+  const { spo2, heart_rate, accelerometer, fall_detection } = data
 
   const axPct = Math.min(Math.abs(accelerometer.x) / 2 * 100, 100)
   const ayPct = Math.min(Math.abs(accelerometer.y) / 2 * 100, 100)
   const azPct = Math.min(Math.abs(accelerometer.z) / 2 * 100, 100)
 
-  const fallColor = fall_detection.detected ? 'red' : 'green'
   const spo2Trend = spo2.value >= 95
 
   return (
@@ -82,11 +145,31 @@ const Dashboard = () => {
               Real-time sensor data and safety monitoring
             </p>
           </div>
-          <div className="flex items-center gap-3 mt-4 md:mt-0">
+          <div className="flex items-center gap-3 mt-4 md:mt-0 flex-wrap">
+            {/* Server connection */}
             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border font-cabin text-sm ${connected ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'}`}>
               {connected ? <Wifi size={14} /> : <WifiOff size={14} />}
-              {connected ? 'ML Server Connected' : 'Simulated Data'}
+              {connected ? 'Server Connected' : 'Offline'}
             </div>
+            {/* Data source badge — always hardware when we reach here */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border font-cabin text-sm bg-emerald-500/10 border-emerald-500/30 text-emerald-400">
+              <Cpu size={14} />
+              ESP32 Hardware
+            </div>
+            {/* Mesh indicator */}
+            {meshCtx.meshActive && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-violet-500/10 border-violet-500/30 text-violet-400 font-cabin text-sm">
+                <Signal size={14} />
+                ESP-NOW Mesh
+              </div>
+            )}
+            {/* Blackout mode warning */}
+            {meshCtx.blackoutMode && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-red-500/15 border-red-500/40 text-red-400 font-cabin text-sm animate-pulse">
+                <ZapOff size={14} />
+                BLACKOUT {blackoutCountdown > 0 && `(${blackoutCountdown}s)`}
+              </div>
+            )}
             <button className="px-4 py-2 bg-primary rounded-lg font-cabin text-sm text-white">
               Live
             </button>
@@ -98,6 +181,95 @@ const Dashboard = () => {
             </button>
           </div>
         </div>
+
+        {/* Emergency Overlay */}
+        {showEmergencyOverlay && data?.fall_detection?.detected && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="max-w-lg w-full mx-4 bg-gradient-to-br from-red-950 to-red-900 border-2 border-red-500/60 rounded-2xl p-8 shadow-2xl shadow-red-500/20 animate-pulse-slow">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-14 h-14 bg-red-500/30 rounded-xl flex items-center justify-center">
+                  <AlertTriangle size={32} className="text-red-400 animate-pulse" />
+                </div>
+                <div>
+                  <h2 className="font-serif text-3xl text-white">EMERGENCY</h2>
+                  <p className="font-inter text-sm text-red-300">Fall Detected — Immediate Attention Required</p>
+                </div>
+              </div>
+
+              {meshCtx.blackoutMode && (
+                <div className="mb-4 p-3 bg-orange-500/20 border border-orange-500/30 rounded-lg">
+                  <p className="font-cabin text-sm text-orange-300 flex items-center gap-2">
+                    <Signal size={14} />
+                    Relayed via ESP-NOW Mesh — Orphan Transaction Path
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="p-3 bg-black/30 rounded-lg text-center">
+                  <p className="font-inter text-xs text-red-300">SpO2</p>
+                  <p className="font-manrope text-2xl text-white">{data.spo2?.value}%</p>
+                </div>
+                <div className="p-3 bg-black/30 rounded-lg text-center">
+                  <p className="font-inter text-xs text-red-300">Heart Rate</p>
+                  <p className="font-manrope text-2xl text-white">{data.heart_rate?.value}</p>
+                </div>
+                <div className="p-3 bg-black/30 rounded-lg text-center">
+                  <p className="font-inter text-xs text-red-300">Fall Prob</p>
+                  <p className="font-manrope text-2xl text-white">{(data.fall_detection.probability * 100).toFixed(0)}%</p>
+                </div>
+              </div>
+
+              {meshCtx.emergencies.length > 0 && meshCtx.emergencies[0].solana_tx && (
+                <div className="mb-4 p-3 bg-indigo-500/20 border border-indigo-500/30 rounded-lg">
+                  <p className="font-inter text-xs text-indigo-300 mb-1">Orphan Transaction</p>
+                  <a href={`https://explorer.solana.com/tx/${meshCtx.emergencies[0].solana_tx}?cluster=devnet`}
+                     target="_blank" rel="noopener noreferrer"
+                     className="font-mono text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                    {meshCtx.emergencies[0].solana_tx.slice(0, 20)}...
+                    <ExternalLink size={10} />
+                  </a>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowEmergencyOverlay(false)}
+                className="w-full py-3 bg-red-600 hover:bg-red-500 rounded-lg font-cabin text-sm text-white transition-colors"
+              >
+                Acknowledge & Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Blackout Mode Banner */}
+        {meshCtx.blackoutMode && (
+          <div className="mb-6 relative overflow-hidden rounded-2xl border border-red-500/40 bg-gradient-to-r from-red-950/80 via-orange-950/80 to-red-950/80 p-5">
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute inset-0" style={{
+                backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(255,0,0,0.1) 10px, rgba(255,0,0,0.1) 20px)',
+                animation: 'slide 1s linear infinite',
+              }} />
+            </div>
+            <div className="relative z-10 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+                  <ZapOff size={24} className="text-red-400 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="font-cabin text-lg text-red-300 font-bold">BLACKOUT MODE</h3>
+                  <p className="font-inter text-sm text-red-400/80">
+                    Wi-Fi down — ESP-NOW mesh relay active — Emergency packets routed through helper nodes
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-manrope text-3xl text-red-400">{blackoutCountdown}s</p>
+                <p className="font-inter text-xs text-red-400/60">remaining</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-auto">
@@ -386,11 +558,11 @@ const Dashboard = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 bg-[#0a0a0a] rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
-                  <Radio size={16} className="text-primary" />
+                  <Radio size={16} className={devices.esp32.status === 'Online' ? 'text-emerald-400' : 'text-primary'} />
                   <span className="font-cabin text-xs text-white/60">ESP32</span>
                 </div>
-                <p className="font-manrope text-lg text-white mb-1">{devices.esp32.status}</p>
-                <p className="font-inter text-xs text-green-400">{devices.esp32.connection}</p>
+                <p className={`font-manrope text-lg mb-1 ${devices.esp32.status === 'Online' ? 'text-emerald-400' : 'text-white'}`}>{devices.esp32.status}</p>
+                <p className={`font-inter text-xs ${devices.esp32.connection === 'Hardware' ? 'text-emerald-400' : 'text-amber-400'}`}>{devices.esp32.connection}</p>
               </div>
               <div className="p-4 bg-[#0a0a0a] rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
@@ -410,28 +582,217 @@ const Dashboard = () => {
               </div>
               <div className="p-4 bg-[#0a0a0a] rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle size={16} className={devices.buzzer.status === 'ALERT' ? 'text-red-400 animate-pulse' : 'text-yellow-400'} />
-                  <span className="font-cabin text-xs text-white/60">Buzzer</span>
+                  <Signal size={16} className={devices.esp_now?.status === 'Active' ? 'text-violet-400' : 'text-white/40'} />
+                  <span className="font-cabin text-xs text-white/60">ESP-NOW Mesh</span>
                 </div>
-                <p className={`font-manrope text-lg mb-1 ${devices.buzzer.status === 'ALERT' ? 'text-red-400' : 'text-white'}`}>{devices.buzzer.status}</p>
-                <p className="font-inter text-xs text-white/60">{devices.buzzer.connection}</p>
+                <p className={`font-manrope text-lg mb-1 ${devices.esp_now?.status === 'Active' ? 'text-violet-400' : 'text-white/50'}`}>
+                  {devices.esp_now?.status || 'Inactive'}
+                </p>
+                <p className="font-inter text-xs text-white/60">{devices.esp_now?.connection || 'No Peers'}</p>
               </div>
             </div>
           </div>
 
+          {/* ═══ Mesh Network Card ═══ */}
+          <div className="lg:col-span-4 bg-gradient-to-r from-[#1a1020]/90 to-[#0f1a2e]/90 backdrop-blur-sm border border-violet-500/20 rounded-2xl p-6 hover:border-violet-500/40 transition-all duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-violet-500/20 rounded-xl flex items-center justify-center">
+                  <Signal size={24} className="text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="font-cabin text-base text-white">Mesh Network — Blackout Protocol</h3>
+                  <p className="font-inter text-xs text-white/50 mt-0.5">
+                    ESP-NOW dual-path relay &middot; Disaster-resilient emergency routing
+                  </p>
+                </div>
+              </div>
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-cabin ${
+                meshCtx.meshActive
+                  ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                  : 'bg-white/5 border-white/10 text-white/40'
+              }`}>
+                <div className={`w-2 h-2 rounded-full ${meshCtx.meshActive ? 'bg-green-400 animate-pulse' : 'bg-white/30'}`} />
+                {meshCtx.meshActive ? 'Mesh Active' : 'No Peers'}
+              </div>
+            </div>
+
+            {/* Network Topology Visualization */}
+            <div className="relative h-28 mb-6 flex items-center justify-center">
+              {/* Sensor Node */}
+              <div className="flex flex-col items-center z-10">
+                <div className="w-16 h-16 rounded-xl border-2 flex items-center justify-center transition-all bg-emerald-500/20 border-emerald-500/40">
+                  <Cpu size={24} className="text-emerald-400" />
+                </div>
+                <p className="font-cabin text-xs text-white/80 mt-2">Sensor Node</p>
+                <p className="font-inter text-[10px] text-emerald-400">Hardware</p>
+              </div>
+
+              {/* ESP-NOW Link */}
+              <div className="flex-1 max-w-[200px] mx-4 relative">
+                <svg className="w-full h-8" viewBox="0 0 200 32">
+                  <line x1="0" y1="16" x2="200" y2="16"
+                    stroke={meshCtx.meshActive ? '#8b5cf6' : '#333'}
+                    strokeWidth="2"
+                    strokeDasharray={meshCtx.blackoutMode ? '8,4' : meshCtx.meshActive ? '4,4' : '2,6'}
+                    className={meshCtx.meshActive ? 'animate-dash' : ''}
+                  />
+                  {/* Radio wave dots */}
+                  {meshCtx.meshActive && (
+                    <>
+                      <circle cx="60" cy="16" r="3" fill="#8b5cf6" opacity="0.6" className="animate-ping" />
+                      <circle cx="100" cy="16" r="3" fill="#8b5cf6" opacity="0.4" className="animate-ping" style={{ animationDelay: '0.3s' }} />
+                      <circle cx="140" cy="16" r="3" fill="#8b5cf6" opacity="0.6" className="animate-ping" style={{ animationDelay: '0.6s' }} />
+                    </>
+                  )}
+                </svg>
+                <p className="text-center font-inter text-[10px] text-violet-400/80">
+                  {meshCtx.meshActive ? 'ESP-NOW' : 'Waiting...'}
+                </p>
+              </div>
+
+              {/* Relay Node */}
+              <div className="flex flex-col items-center z-10">
+                <div className={`w-16 h-16 rounded-xl border-2 flex items-center justify-center transition-all ${
+                  meshCtx.nodes.some(n => n.node_type === 'relay' && n.online)
+                    ? 'bg-violet-500/20 border-violet-500/40'
+                    : 'bg-white/5 border-white/10'
+                }`}>
+                  <Radio size={24} className={
+                    meshCtx.nodes.some(n => n.node_type === 'relay' && n.online)
+                      ? 'text-violet-400'
+                      : 'text-white/40'
+                  } />
+                </div>
+                <p className="font-cabin text-xs text-white/80 mt-2">Relay Node</p>
+                <p className={`font-inter text-[10px] ${
+                  meshCtx.nodes.some(n => n.node_type === 'relay' && n.online)
+                    ? 'text-violet-400' : 'text-white/30'
+                }`}>
+                  {meshCtx.nodes.some(n => n.node_type === 'relay' && n.online) ? 'Online' : 'Offline'}
+                </p>
+              </div>
+
+              {/* Internet → Solana */}
+              <div className="flex-1 max-w-[120px] mx-4 relative">
+                <svg className="w-full h-8" viewBox="0 0 120 32">
+                  <line x1="0" y1="16" x2="120" y2="16"
+                    stroke={meshCtx.nodes.some(n => n.node_type === 'relay' && n.online && n.wifi) ? '#3b82f6' : '#333'}
+                    strokeWidth="2"
+                    strokeDasharray="4,4"
+                  />
+                </svg>
+                <p className="text-center font-inter text-[10px] text-blue-400/80">Internet</p>
+              </div>
+
+              {/* Solana */}
+              <div className="flex flex-col items-center z-10">
+                <div className="w-16 h-16 rounded-xl border-2 bg-indigo-500/20 border-indigo-500/40 flex items-center justify-center">
+                  <Shield size={24} className="text-indigo-400" />
+                </div>
+                <p className="font-cabin text-xs text-white/80 mt-2">Solana</p>
+                <p className="font-inter text-[10px] text-indigo-400">Devnet</p>
+              </div>
+            </div>
+
+            {/* Mesh Stats Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-3 bg-[#0a0a0a]/60 rounded-xl">
+                <p className="font-inter text-xs text-white/50 mb-1">Data Source</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span className="font-manrope text-sm text-emerald-400">Hardware</span>
+                </div>
+              </div>
+              <div className="p-3 bg-[#0a0a0a]/60 rounded-xl">
+                <p className="font-inter text-xs text-white/50 mb-1">Mesh Nodes</p>
+                <span className="font-manrope text-sm text-white">
+                  {meshCtx.nodes.filter(n => n.online).length} / {meshCtx.nodes.length} online
+                </span>
+              </div>
+              <div className="p-3 bg-[#0a0a0a]/60 rounded-xl">
+                <p className="font-inter text-xs text-white/50 mb-1">Emergency Relays</p>
+                <span className="font-manrope text-sm text-white">{meshCtx.totalEmergencies}</span>
+              </div>
+              <div className="p-3 bg-[#0a0a0a]/60 rounded-xl">
+                <p className="font-inter text-xs text-white/50 mb-1">Network Mode</p>
+                <span className={`font-manrope text-sm ${meshCtx.blackoutMode ? 'text-red-400' : 'text-green-400'}`}>
+                  {meshCtx.blackoutMode ? 'Blackout' : 'Normal'}
+                </span>
+              </div>
+            </div>
+
+            {/* Recent Emergency Events */}
+            {meshCtx.emergencies.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <p className="font-cabin text-xs text-white/50 mb-3">Recent Emergency Relays</p>
+                <div className="space-y-2">
+                  {meshCtx.emergencies.slice(0, 3).map((e, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-red-500/5 border border-red-500/10 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle size={14} className="text-red-400" />
+                        <div>
+                          <p className="font-inter text-xs text-white/80">
+                            {e.alert_type === 1 ? 'Fall' : e.alert_type === 2 ? 'Low SpO2' : e.alert_type === 3 ? 'Gas Hazard' : 'SOS'}
+                            {' '}&middot; {e.hop_count || 0} hop{(e.hop_count || 0) !== 1 ? 's' : ''}
+                            {e.is_orphan && (
+                              <span className="ml-2 px-1.5 py-0.5 bg-orange-500/20 text-orange-400 rounded text-[10px] font-cabin">ORPHAN TX</span>
+                            )}
+                          </p>
+                          <p className="font-inter text-[10px] text-white/40">From: {e.origin_mac || '?'} → Relay: {e.relay_mac || '?'}</p>
+                        </div>
+                      </div>
+                      {e.solana_tx && (
+                        <a href={`https://explorer.solana.com/tx/${e.solana_tx}?cluster=devnet`}
+                           target="_blank" rel="noopener noreferrer"
+                           className="font-mono text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                          View Tx <ExternalLink size={8} />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="lg:col-span-4 bg-[#1a1a1a]/80 backdrop-blur-sm border border-[#2a2a2a] rounded-2xl p-6 hover:border-primary/30 transition-all duration-300">
             <h3 className="font-cabin text-base text-white mb-6">Quick Actions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Simulate Blackout */}
+              <button
+                onClick={() => meshCtx.simulateBlackout(30)}
+                className={`p-4 rounded-xl font-cabin text-sm text-white text-left flex items-center justify-between group transition-colors ${
+                  meshCtx.blackoutMode
+                    ? 'bg-red-600 hover:bg-red-500'
+                    : 'bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  {meshCtx.blackoutMode ? <Zap size={16} /> : <ZapOff size={16} />}
+                  {meshCtx.blackoutMode ? 'Stop Blackout' : 'Simulate Blackout'}
+                </span>
+                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+              {/* Simulate Fall */}
+              <button
+                onClick={() => meshCtx.simulateFall()}
+                className="p-4 bg-gradient-to-r from-red-700 to-pink-700 hover:from-red-600 hover:to-pink-600 rounded-xl font-cabin text-sm text-white text-left flex items-center justify-between group transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <AlertTriangle size={16} />
+                  Simulate Fall
+                </span>
+                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+              {/* Test Alert */}
               <button className="p-4 bg-accent rounded-xl font-cabin text-sm text-white hover:bg-accent/80 transition-colors text-left flex items-center justify-between group">
                 <span>Test Alert System</span>
                 <ArrowUpRight size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </button>
+              {/* Download Report */}
               <button className="p-4 bg-accent rounded-xl font-cabin text-sm text-white hover:bg-accent/80 transition-colors text-left flex items-center justify-between group">
                 <span>Download Report</span>
-                <ArrowUpRight size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              </button>
-              <button className="p-4 bg-accent rounded-xl font-cabin text-sm text-white hover:bg-accent/80 transition-colors text-left flex items-center justify-between group">
-                <span>Configure Sensors</span>
                 <ArrowUpRight size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
               </button>
             </div>

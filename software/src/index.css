@@ -13,3 +13,22 @@ body {
   background-color: #0a0a0a;
   color: white;
 }
+
+/* Mesh network ESP-NOW dash animation */
+@keyframes dash-move {
+  to { stroke-dashoffset: -16; }
+}
+.animate-dash {
+  animation: dash-move 0.8s linear infinite;
+}
+
+/* Blackout banner slide */
+@keyframes slide {
+  from { transform: translateX(0); }
+  to { transform: translateX(20px); }
+}
+
+/* Emergency overlay slow pulse */
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
